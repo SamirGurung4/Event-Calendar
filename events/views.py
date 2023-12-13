@@ -18,8 +18,7 @@ class CalendarView(View):
         :return:
             A dictionary containing the context data, including the 'events' key with all events.
         """
-        context = {}
-        context['events'] = Event.objects.all()
+        context = {'events': Event.objects.all()}
         return context
 
     def get(self, request, *args, **kwargs):
