@@ -9,6 +9,7 @@ class CalendarView(View):
     """
     View for handling initializing calendar and submitting event forms
     """
+
     template_name = 'calendar.html'
 
     def get_context_data(self, **kwargs):
