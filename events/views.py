@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from django.views import View
-from .models import Event
+from .models import Event, Reminder
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 
@@ -51,26 +51,38 @@ class CalendarView(View):
         start_date = request.POST.get('start_date')
         end_date = request.POST.get('end_date')
         time = request.POST.get('time')
+        reminder_text = request.POST.get('reminderText')
+        reminder_date = request.POST.get('reminderDate')
+        reminder_time = request.POST.get('reminderTime')
 
         if title and start_date and end_date:
             # Create and save the event to the database
-            Event.objects.create(
+            event = Event.objects.create(
                 title=title,
                 start_date=start_date,
                 end_date=end_date,
                 time=time
             )
 
-            return JsonResponse({'status': 'success'})
+            # Check if reminder data is provided and create a reminder
+            if reminder_text and reminder_date:
+                reminder = Reminder.objects.create(
+                    event=event,
+                    reminder_text=reminder_text,
+                    reminder_date=reminder_date,
+                    reminder_time=reminder_time
+                )
+
+            return JsonResponse({'status': 'success', 'event_id': event.id})
         else:
             return JsonResponse({'status': 'error', 'message': 'Incomplete data'})
 
 
 class DeleteEventView(View):
     """
-     View for handling the deletion of events from the calendar.
-
+    View for handling the deletion of events from the calendar.
     """
+
     template_name = 'calendar.html'
 
     def post(self, request, *args, **kwargs):
@@ -92,4 +104,3 @@ class DeleteEventView(View):
             return JsonResponse({'status': 'success'})
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)})
-

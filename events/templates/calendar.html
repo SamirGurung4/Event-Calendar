@@ -26,7 +26,15 @@
         <label for="eventDate">Dates:</label>
         <input type="text" name="eventDate" id="eventDate" readonly required><br>
         <label for="eventTime">Time:</label>
-        <input type="time" name="eventDate" id="eventTime"><br>
+        <input type="time" name="eventTime" id="eventTime"><br>
+        <!-- Add fields for reminders -->
+        <label for="reminderText">Reminder Text:</label>
+        <input type="text" name="reminderText" id="reminderText"><br>
+        <label for="reminderDate">Reminder Date:</label>
+        <input type="text" name="reminderDate" id="reminderDate"><br>
+        <label for="reminderTime">Reminder Time:</label>
+        <input type="time" name="reminderTime" id="reminderTime"><br>
+        <!-- End of reminder fields -->
         <button type="submit" id="createEventBtn">Create Event</button>
         <button type="button" id="deleteEventBtn">Delete Event</button>
     </form>
@@ -41,9 +49,8 @@
     $(document).ready(function () {
         var calendar = $('#calendar');
         var selectedDates = [];
-        var selectedEventId; // Keep track of the selected event ID for updating
+        var selectedEventId;
 
-        // Initialize the calendars
         calendar.fullCalendar({
             events: [
                 {% for event in events %}
@@ -51,7 +58,16 @@
                     title: '{{ event.title }}',
                     start: '{{ event.start_date|date:"Y-m-d" }}',
                     end: '{{ event.end_date|date:"Y-m-d" }}',
-                    id: '{{ event.id }}',  // Add event ID
+                    id: '{{ event.id }}',
+                    reminders: [
+                        {% for reminder in event.reminders.all %}
+                        {
+                            reminderText: '{{ reminder.reminder_text }}',
+                            reminderDate: '{{ reminder.reminder_date|date:"Y-m-d" }}',
+                            reminderTime: '{{ reminder.reminder_time|time:"H:i" }}',
+                        },
+                        {% endfor %}
+                    ]
                 },
                 {% endfor %}
             ],
@@ -62,40 +78,24 @@
             },
             selectable: true,
             select: function (start, end, jsEvent, view) {
-                // Clear selected event ID
                 selectedEventId = null;
-
-                // Set selected dates
                 selectedDates = getDatesArray(start, end);
-
-                // Set date in the event modal
                 $('#eventDate').val(formatDateRange(selectedDates));
-
-                // Open the event modal
                 $('#createEventModal').dialog('open');
             },
             eventClick: function (event, jsEvent, view) {
-                // Set selected event ID for updating
                 selectedEventId = event.id;
-
-                // Set selected dates
                 selectedDates = [moment(event.start)];
-
-                // Set date and title in the event modal
                 $('#eventDate').val(formatDateRange(selectedDates));
                 $('#eventTitle').val(event.title);
-
-                // Open the event modal
                 $('#createEventModal').dialog('open');
             }
         });
 
-        // Initialize the modal
         $('#createEventModal').dialog({
             autoOpen: false,
             modal: true,
             beforeOpen: function (event, ui) {
-                // Clear form fields when opening the dialog
                 $('#eventTitle').val('');
             },
             buttons: {
@@ -105,51 +105,51 @@
             }
         });
 
-        // Handle form submission for creating and updating events
-$('#createEventForm').submit(function (e) {
-    e.preventDefault();
+        $('#createEventForm').submit(function (e) {
+            e.preventDefault();
+            var title = $('#eventTitle').val();
+            var startDate = formatDate(selectedDates[0]);
+            var endDate = formatDate(selectedDates[selectedDates.length - 1]);
+            var time = $('#eventTime').val();
+            var reminderText = $('#reminderText').val();
+            var reminderDate = formatDate(selectedDates[0]); // Set reminder date to the start date by default
+            var reminderTime = $('#reminderTime').val();
 
-    var title = $('#eventTitle').val();
-    var startDate = formatDate(selectedDates[0]);
-    var endDate = formatDate(selectedDates[selectedDates.length - 1]);
-    var time = $('#eventTime').val();  // Get the time input value
+            $.ajax({
+                url: '/calendar',  // Update the URL to match your Django view
+                type: 'POST',
+                headers: {'X-CSRFToken': $('[name=csrfmiddlewaretoken]').val()},
+                data: {
+                    'title': title,
+                    'start_date': startDate,
+                    'end_date': endDate,
+                    'time': time,
+                    'reminderText': reminderText,
+                    'reminderDate': reminderDate,
+                    'reminderTime': reminderTime,
+                },
+                success: function (response) {
+                    if (response.status === 'success') {
+                        calendar.fullCalendar('refetchEvents');
+                    } else {
+                        alert('Error: ' + response.message);
+                    }
+                },
+                error: function () {
+                    alert('Error submitting the form');
+                }
+            });
 
-    $.ajax({
-        url: '/calendar',  // Update the URL to match your Django view
-        type: 'POST',
-        headers: {'X-CSRFToken': $('[name=csrfmiddlewaretoken]').val()},
-        data: {
-            'title': title,
-            'start_date': startDate,
-            'end_date': endDate,
-            'time': time  // Include time in the data sent to the server
-        },
-        success: function (response) {
-            if (response.status === 'success') {
-                // Reload the calendar to display the updated events
-                calendar.fullCalendar('refetchEvents');
-            } else {
-                alert('Error: ' + response.message);
-            }
-        },
-        error: function () {
-            alert('Error submitting the form');
-        }
-    });
+            selectedEventId = null;
+            $('#eventTitle').val('');
+            $('#eventDate').val('');
+            $('#eventTime').val('');
+            $('#reminderText').val('');
+            $('#reminderDate').val('');
+            $('#reminderTime').val('');
+            $('#createEventModal').dialog('close');
+        });
 
-    // Clear the selected event ID
-    selectedEventId = null;
-
-    // Clear form fields
-    $('#eventTitle').val('');
-    $('#eventDate').val('');
-    $('#eventTime').val('');  // Clear the time input
-
-    // Close the event modal
-    $('#createEventModal').dialog('close');
-});
-
-        // Handle button click for deleting events
         $('#deleteEventBtn').on('click', function () {
             selectedDates.forEach(function (date) {
                 var existingEvent = calendar.fullCalendar('clientEvents', function (event) {
@@ -157,12 +157,10 @@ $('#createEventForm').submit(function (e) {
                 });
 
                 if (existingEvent.length > 0) {
-                    // Remove the existing event from the calendars
                     calendar.fullCalendar('removeEvents', function (event) {
                         return event._id === existingEvent[0]._id;
                     });
 
-                    // Delete the event from the database
                     if (selectedEventId) {
                         $.ajax({
                             url: '/delete_event',  // Update the URL to match your Django view for deleting events
@@ -184,18 +182,16 @@ $('#createEventForm').submit(function (e) {
                 }
             });
 
-            // Clear the selected event ID
             selectedEventId = null;
-
-            // Clear form fields
             $('#eventTitle').val('');
             $('#eventDate').val('');
-
-            // Close the event modal
+            $('#eventTime').val('');
+            $('#reminderText').val('');
+            $('#reminderDate').val('');
+            $('#reminderTime').val('');
             $('#createEventModal').dialog('close');
         });
 
-        // Function to get an array of dates between start and end
         function getDatesArray(start, end) {
             var datesArray = [];
             var currentDate = moment(start);
@@ -206,7 +202,6 @@ $('#createEventForm').submit(function (e) {
             return datesArray;
         }
 
-        // Function to format a range of dates as a string
         function formatDateRange(datesArray) {
             var dateStrings = datesArray.map(function (date) {
                 return date.format('YYYY-MM-DD');
@@ -214,7 +209,6 @@ $('#createEventForm').submit(function (e) {
             return dateStrings.join(', ');
         }
 
-        // Function to format a single date
         function formatDate(date) {
             return date.format('YYYY-MM-DD');
         }
