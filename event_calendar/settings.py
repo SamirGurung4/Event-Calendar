@@ -56,6 +56,7 @@ ROOT_URLCONF = "event_calendar.urls"
 
 JAZZMIN_SETTINGS = {
     "site_admin": "Example Admin",
+    "site_title": "Test",
     "site_header": "Example Header",
     "site_brand": 'Brand',
     "topmenu_links": [
@@ -77,26 +78,25 @@ JAZZMIN_SETTINGS = {
         {"model": "auth.user"}
     ],
     "show_sidebar": True,
+    "navigation_expanded": False,
+    "hide_apps": [],
+    "hide_models": [],
     "custom_links": {
-        "events": [{
-            "title": "Test",
-            "url": "make_messages",
-            "icon": "fas fa-comments",
-            "permissions": ["events.view_events"]
-        }]
+        "auth": [],
     },
     "icons": {
         "auth": "fas fa-users-cog",
         "auth.user": "fas fa-user",
         "auth.Group": "fas fa-users",
 
-        "events": "fas fa-users-cog",
-        "events.event": "fas fa-calendar-alt",
 
-        "events": "fas fa-users-cog",
+        "events": "fas fa-calendar-alt",
+        "events.event": "fas fa-calendar-alt",
         "events.reminder": "fas fa-bell",
     },
-    "changeform_format": "horizontal_tabs",
+    "changeform_format": "collapsible",
+    "show_ui_builder": True,
+    "related_modal_active": True,
 }
 
 JAZZMIN_UI_TWEAKS = {
@@ -115,12 +115,12 @@ JAZZMIN_UI_TWEAKS = {
     "sidebar": "sidebar-dark-primary",
     "sidebar_nav_small_text": False,
     "sidebar_disable_expand": False,
-    "sidebar_nav_child_indent": False,
+    "sidebar_nav_child_indent": True,
     "sidebar_nav_compact_style": False,
     "sidebar_nav_legacy_style": False,
     "sidebar_nav_flat_style": False,
-    "theme": "solar",
-    "dark_mode_theme": "superhero",
+    "theme": "materia",
+    # "dark_mode_theme": "superhero",
     "button_classes": {
         "primary": "btn-primary",
         "secondary": "btn-secondary",
@@ -128,7 +128,7 @@ JAZZMIN_UI_TWEAKS = {
         "warning": "btn-warning",
         "danger": "btn-danger",
         "success": "btn-success"
-    }
+    },
 }
 
 TEMPLATES = [

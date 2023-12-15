@@ -2,6 +2,11 @@ from django.contrib import admin
 from .models import Event, Reminder
 
 
+class ReminderInline(admin.TabularInline):
+    model = Reminder
+    extra = 1
+
+
 @admin.register(Event)
 class EventAdmin(admin.ModelAdmin):
     """
@@ -10,12 +15,13 @@ class EventAdmin(admin.ModelAdmin):
     list_display = ('title', 'start_date', 'end_date', 'time')
     search_fields = ['title']
     ordering = ['start_date']
-
-    class ReminderInline(admin.TabularInline):
-        model = Reminder
-        extra = 1
-
     inlines = [ReminderInline]
+
+    fieldsets = (
+        ('Event Details', {
+            'fields': ('title', 'start_date', 'end_date', 'time'),
+        }),
+    )
 
 
 @admin.register(Reminder)
