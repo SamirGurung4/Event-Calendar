@@ -1,8 +1,14 @@
+# views.py
+from django.db.models import DateTimeField, Count
+from django.db.models.functions import TruncDay, TruncDate
 from django.shortcuts import render
 from django.views import View
 from .models import Event, Reminder
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
+from django.db import models
+from django.db.models.functions import TruncMonth
+
 
 
 class CalendarView(View):
@@ -19,7 +25,12 @@ class CalendarView(View):
         :return:
             A dictionary containing the context data, including the 'events' key with all events.
         """
-        context = {'events': Event.objects.all()}
+        # Group events by month
+        events_by_month = Event.objects.annotate(
+            month=TruncMonth('start_date')
+        ).values('month').annotate(event_count=Count('id')).order_by('month')
+
+        context = {'events_by_month': events_by_month}
         return context
 
     def get(self, request, *args, **kwargs):
@@ -104,3 +115,41 @@ class DeleteEventView(View):
             return JsonResponse({'status': 'success'})
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)})
+
+
+
+
+def get_events(request):
+    events = Event.objects.all()
+
+    return {
+        "events": events
+    }
+
+
+def dashboard_data(request):
+    # Fetch chart data
+    events = Event.objects.all()
+    event_data = (
+        events.annotate(created_at_trunc=TruncMonth('start_date'))
+        .values('created_at_trunc')
+        .annotate(event_count=Count('id'))
+        .order_by('created_at_trunc')
+        .values('created_at_trunc', 'event_count')
+    )
+
+    # Prepare data for Chart.js
+    labels = [entry['created_at_trunc'].strftime('%Y-%m') for entry in event_data]
+    data = [entry['event_count'] for entry in event_data]
+
+
+    # Create variables for data structure that can hold the required data
+    dashboard_event_chart_data = {
+        'labels': labels,
+        'data': data,
+    }
+
+    return {
+        'dashboard_event_chart_data': dashboard_event_chart_data,
+        # Add more chart data variables here if needed
+    }

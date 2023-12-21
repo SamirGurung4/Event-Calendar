@@ -1,0 +1,260 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static jazzmin %}
+
+{% block bodyclass %}{{ block.super }} dashboard{% endblock %}
+
+{% block content_title %} {% trans 'Dashboard' %} {% endblock %}
+
+{% block breadcrumbs %}
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'admin:index' %}">{% trans 'Home' %}</a></li>
+        <li class="breadcrumb-item">{% trans 'Dashboard' %}</li>
+    </ol>
+{% endblock %}
+
+{% block content %}
+    {% get_side_menu using="app_list" as dashboard_list %}
+    {% if dashboard_list %}
+        {% widthratio dashboard_list|length 2 1 as middle %}
+    {% endif %}
+
+    <div class="col-lg-9 col-12">
+        <div class="row">
+            <div class="col-md-6 col-sm-12">
+                {% for app in dashboard_list %}
+                    <div class="card">
+                        <div class="card-header" data-toggle="collapse" data-target="#{{ app.name|slugify }}">
+                            <h5 class="m-0">{{ app.name }}</h5>
+                        </div>
+                        <div id="{{ app.name|slugify }}" class="collapse">
+                            <div class="card-body">
+                                <table class="table table-sm">
+                                    <tbody>
+                                        {% for model in app.models %}
+                                            <tr>
+                                                <td>
+                                                    {% if model.url %}<a href="{{ model.url }}">{{ model.name }}</a>{% else %}{{ model.name }}{% endif %}
+                                                </td>
+                                                <td>
+                                                    <div class="btn-group float-right">
+                                                        {% if model.add_url %}
+                                                            <a href="{{ model.add_url }}" class="btn btn-xs {{ jazzmin_ui.button_classes.success }} addlink">{% trans 'Add' %}</a>
+                                                        {% endif %}
+                                                        {% if model.url %}
+                                                            {% if model.view_only %}
+                                                                <a href="{{ model.url }}" class="btn btn-xs {{ jazzmin_ui.button_classes.info }} viewlink">{% trans 'View' %}</a>
+                                                            {% else %}
+                                                                <a href="{{ model.url }}" class="btn btn-xs {{ jazzmin_ui.button_classes.info }} changelink">{% if model.custom %}{% trans 'Go' %}{% else %}{% trans 'Change' %}{% endif %}</a>
+                                                            {% endif %}
+                                                        {% endif %}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if forloop.counter == middle|add:"0" %}
+                    </div>
+                    <div class="col-md-6 col-sm-12">
+                    {% endif %}
+                {% endfor %}
+            </div>
+            <div class="col-md-6 col-sm-12">
+                <div class="card"> 
+                    <div class="dashboard-chart">
+                        <h2>Event Line Chart</h2>
+                        {% comment %} <button class="btn btn-link" data-toggle="collapse" data-target="#adminChartContainer" aria-expanded="false" aria-controls="adminChartContainer">Expand Chart</button> {% endcomment %}
+                        <div id="adminChartContainer" class="">
+                            <canvas id="adminChart" width="400" height="400"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 col-sm-12">
+                <div class="card" style="background-color: #90ee91;">
+                    <div class="dashboard-chart">
+                        <h2>Event Pie Chart</h2>
+                        {% comment %} <button class="btn btn-link" data-toggle="collapse" data-target="#adminChart1Container" aria-expanded="false" aria-controls="adminChart1Container">Expand Chart</button> {% endcomment %}
+                        <div id="adminChart1Container" class="">
+                            <canvas id="adminChart1" width="400" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-3 col-12">
+        <div id="content-related">
+            <div class="module" id="recent-actions-module">
+                <h4 class="mb-3">{% trans 'Recent actions' %}</h4>
+                {% load log %}
+                {% get_admin_log 6 as admin_log for_user user %}
+                {% if not admin_log %}
+                    <p>{% trans 'None available' %}</p>
+                {% else %}
+                    <div class="timeline">
+                        {% for entry in admin_log %}
+                            <div>
+                                {% if entry.is_change %}
+                                    <i class="fas fa-edit bg-gray text-xs"></i>
+                                {% elif entry.is_deletion %}
+                                    <i class="fas fa-trash bg-danger text-xs"></i>
+                                {% elif entry.is_addition %}
+                                    <i class="fas fa-plus-circle bg-success text-xs"></i>
+                                {% endif %}
+
+                                <div class="timeline-item">
+                                    <span class="time"><i class="fas fa-clock"></i> {% blocktrans with timesince=entry.action_time|timesince %}{{ timesince }} ago{% endblocktrans %}</span>
+                                    <h3 class="timeline-header no-border">
+                                        {% if entry.is_deletion or not entry.get_admin_url %}
+                                            {{ entry.object_repr }}
+                                        {% else %}
+                                            <a href="{{ entry.get_admin_url }}">{{ entry.object_repr }}</a>
+                                        {% endif %}
+
+                                        {% if entry.model %}
+                                            <span class="mini quiet">
+                                                {% filter capfirst %}
+                                                    {{ entry.model }}
+                                                {% endfilter %}
+                                            </span>
+                                        {% endif %}
+                                    </h3>
+                                    {% if not entry.is_deletion %}
+                                        <div class="timeline-body">
+                                            {% if entry.is_addition %}
+                                                {{ entry }}
+                                            {% else %}
+                                                <ul style="list-style: none; padding: 0;">
+                                                    {% action_message_to_list entry as action_message_list %}
+                                                    {% for action_message in action_message_list %}
+                                                        <li>{{ action_message.msg|style_bold_first_word }}</li>
+                                                    {% endfor %}
+                                                </ul>
+                                            {% endif %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                        <div>
+                            <i class="fa fa-clock bg-gray"></i>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+<!-- Include Bootstrap and Chart.js libraries -->
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- Chart.js initialization script -->
+{% block extrajs %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var label = {{ dashboard_event_chart_data.labels | safe }};
+        var data = {{ dashboard_event_chart_data.data | safe }};
+        // Continue with Chart.js initialization
+        var ctx = document.getElementById("adminChart").getContext("2d");
+    
+        if (!label.length) {
+            console.warn("No event data available for the chart.");
+        }
+    
+        // Array of solid colors for each bar
+        var barColors = [
+            'rgb(255, 99, 132)',   // Red
+            'rgb(54, 162, 235)',   // Blue
+            'rgb(255, 206, 86)',   // Yellow
+            'rgb(75, 192, 192)',   // Green
+            'rgb(153, 102, 255)',  // Purple
+        ];
+    
+        var myChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: label,
+                datasets: [{
+                    label: 'Event Data',
+                    data: data,
+                    backgroundColor: barColors,
+                    borderColor: 'rgb(15, 15, 15)',  // Border color is same as background for solid colors
+                    borderWidth: 1,
+                    borderAlign: 'center',
+                    borderDash: [2],
+                    clip: 2,
+                    hoverBorderDash: [2],
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    });
+    
+    
+    
+
+    document.addEventListener('DOMContentLoaded', function () {
+        var label = {{ dashboard_event_chart_data.labels | safe }};
+        var data = {{ dashboard_event_chart_data.data | safe }};
+        // Continue with Chart.js initialization
+        var ctx = document.getElementById("adminChart1").getContext("2d");
+    
+        if (!label.length) {
+            console.warn("No event data available for the chart.");
+        }
+    
+        // Predefined array of colors
+        var predefinedColors = [
+            'rgb(255, 99, 132)',   // Red
+            'rgb(54, 162, 235)',   // Blue
+            'rgb(255, 206, 86)',   // Yellow
+            'rgb(75, 192, 192)',   // Green
+            'rgb(153, 102, 255)',  // Purple
+
+        ];
+    
+        // Use predefined colors for the pie chart
+        var myChart = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: label,
+                datasets: [{
+                    label: 'Event Data',
+                    data: data,
+                    backgroundColor: predefinedColors,
+                    borderColor: predefinedColors.map(color => color + ', 1'),
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+            
+        });
+    });
+    
+    
+</script>
+{% endblock %}

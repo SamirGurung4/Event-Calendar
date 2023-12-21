@@ -1,3 +1,4 @@
+#model.py
 from django.db import models
 
 
@@ -37,3 +38,7 @@ class Reminder(models.Model):
 
     def __str__(self):
         return f"{self.event.title} - {self.reminder_text}"
+
+
+class Person(models.Model):
+    name = models.CharField(max_length=254)

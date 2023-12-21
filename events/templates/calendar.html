@@ -31,7 +31,7 @@
         <label for="reminderText">Reminder Text:</label>
         <input type="text" name="reminderText" id="reminderText"><br>
         <label for="reminderDate">Reminder Date:</label>
-        <input type="text" name="reminderDate" id="reminderDate"><br>
+        <input type="date" name="reminderDate" id="reminderDate"><br>
         <label for="reminderTime">Reminder Time:</label>
         <input type="time" name="reminderTime" id="reminderTime"><br>
         <!-- End of reminder fields -->
@@ -116,7 +116,7 @@
             var reminderTime = $('#reminderTime').val();
 
             $.ajax({
-                url: '/calendar',  // Update the URL to match your Django view
+                url: '/calendar/',  // Update the URL to match your Django view
                 type: 'POST',
                 headers: {'X-CSRFToken': $('[name=csrfmiddlewaretoken]').val()},
                 data: {
@@ -163,7 +163,7 @@
 
                     if (selectedEventId) {
                         $.ajax({
-                            url: '/delete_event',  // Update the URL to match your Django view for deleting events
+                            url: '/delete_event/',  
                             type: 'POST',
                             headers: {'X-CSRFToken': $('[name=csrfmiddlewaretoken]').val()},
                             data: {'event_id': selectedEventId},
