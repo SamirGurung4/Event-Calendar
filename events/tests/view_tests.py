@@ -4,14 +4,11 @@ from django.urls import reverse
 from events.models import Event
 
 
-
-
 class CalendarViewTest(TestCase):
     NUMBER_OF_DATA = 1000
 
     def test_event_creation_on_selecting_date(self):
         # Placeholder values for test data
-        # titles = ['Test Event', 'Test Event 2', 'Test Event 3']
         titles = ['Test Event ' + str(i) for i in range(1, self.NUMBER_OF_DATA)]
         start_dates = [(datetime(2023, 2, 1) + timedelta(days=i)).strftime('%Y-%m-%d') for i in range(1, self.NUMBER_OF_DATA)]
         end_dates = [(datetime(2023, 1, 2) + timedelta(days=i)).strftime('%Y-%m-%d') for i in range(1, self.NUMBER_OF_DATA)]
@@ -20,7 +17,6 @@ class CalendarViewTest(TestCase):
         reminder_dates = [(datetime(2023, 1, 1) + timedelta(days=i)).strftime('%Y-%m-%d') for i in range(1, self.NUMBER_OF_DATA)]
         reminder_times = [(datetime(1, 1, 1, 0, 0, 0) + timedelta(hours=i)).strftime('%H:%M:%S') for i in range(1, self.NUMBER_OF_DATA)]
 
-        # Event with start_date '2023-01-01'
         event_data_list = [
             {
                 'title': title,
@@ -117,7 +113,6 @@ class CalendarViewTest(TestCase):
         data = {
             'title': 'Test Event',
             'start_date': '2023-01-01',
-            # 'end_date' is missing
             'reminderText': 'Test Reminder',
             'reminderDate': '2023-01-01',
             'reminderTime': '10:00:00',
@@ -130,7 +125,7 @@ class CalendarViewTest(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()['status'], 'error')
         self.assertEqual(response.json()['message'], 'Incomplete data')
-    
+
     def test_reminder_creation_incomplete_data(self):
         # Define data with incomplete information (missing 'reminderTime')
         data = {
@@ -139,7 +134,7 @@ class CalendarViewTest(TestCase):
             'end_date': '2023-01-02',
             'reminderText': 'Test Reminder',
             'reminderDate': '2023-01-01',
-            }
+        }
 
         # POST request to the CalendarView endpoint
         response = self.client.post(reverse('calendar'), data)
@@ -184,3 +179,15 @@ class DeleteEventViewTest(TestCase):
 
         # Check if the event is not deleted in the database (should still exist)
         self.assertTrue(Event.objects.filter(id=self.test_event.id).exists())
+
+    def test_event_deletion_missing_event_id(self):
+        # Make a POST request to the DeleteEventView endpoint without providing event_id
+        response = self.client.post(reverse('delete_event'), {})
+
+        # Check if the response indicates an error
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['status'], 'error')
+
+        # Check if the event is not deleted in the database (should still exist)
+        self.assertTrue(Event.objects.filter(id=self.test_event.id).exists())
+

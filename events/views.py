@@ -151,5 +151,4 @@ def dashboard_data(request):
 
     return {
         'dashboard_event_chart_data': dashboard_event_chart_data,
-        # Add more chart data variables here if needed
     }
